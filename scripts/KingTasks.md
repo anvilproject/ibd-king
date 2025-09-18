@@ -1,39 +1,8 @@
-# KING
+# KING Tasks
 
-KING (Kinship-based Inference for GWAS) is a relationship inference tool that estimates kinship coefficients infers IBD segments for all pairwise relationships. Unrelated pairs can be precisely separated from close relatives with no false positives, with accuracy up to 3rd- or 4th-degree (depending on array or WGS) for --related and --ibdseg analyses, and up to 2nd-degree for --kinship analysis.
+## FilterVcfTask
 
-The KING orchestration workflow estimates kinship coefficients from VCF files. There are three run options that can be used to do so: "ibdseg", "kinship", and "related". At least two samples must be used as input to the workflow. Samples for analysis can either be in multiple single-sample VCFs, a single joint VCF, or multiple joint VCFs. This workflow will run with the "ibdseg" option by default, which will analyze all IBD segments shared between individuals and infer the relationship between them. If the "ibdseg" option can not be successfully run, try running with the "related" or "kinship" options. (Note: The "ibdseg" option can produce no output if no IBD segments are found. It can also fail if there are less than 10 samples in the analysis, in which case the "kinship" option is better suited.)
-
-## KING Orchestration Input Parameters
-
-An few example JSON input files for running KING are provided in the `example` folder of this repo. The inputs within the JSON files are dummy paths and are not meant to be used as is. Descriptions of each input are outlined below:
-
-| Type | Name | Req'd | Description | Default Value |
-| :--- | :--- | :---: | :--- | :--- |
-| Array[File] | input_vcfs | Yes | Joint VCFs for identifying related individuals; VCFs must not have overlapping samples and should be gzipped | |
-| Array[File] | input_vcfs_idx | No | Index files for input_vcfs; if only one VCF is used, no index file is required | |
-| String | output_basename | Yes | Basename for file outputs | |
-| File | input_bed | No | BED file for filtering joint VCFs; Use a BED file to increase efficiency of merging dataset VCFs | |
-| String | run_type | No | Type of flag to be used for running KING; Either "ibdseg", "kinship", or "related" | "ibdseg" |
-| Int | degree | No | The maximum degree of relatedness to include in KING output | 3 |
-| String | bcftools_docker_image | No | Docker image for bcftools | "us-central1-docker.pkg.dev/mgb-lmm-gcp-infrast-1651079146/mgbpmbiofx/bcftools:1.17" |
-| String | king_docker_iamge | No | Docker image with KING tools | "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e" |
-
-## KING Orchestration Output Parameters
-
-| Type | Name | When | Description |
-| :--- | :--- | :--- | :--- |
-| File | kinship_output | When --kinship flag is used | .kin file from running KING --kinship;  contains kinship coefficients of individuals |
-| File | kinship_output_0 | When --kinship flag is used | Second .kin file from running KING --kinship; contains kinship coefficients of between-family relationship checking |
-| File | ibdseg_output | Always | .seg file from running KING --ibdseg; contains kinship coefficients and inferred relationships of samples |
-| File | related_output | Always | .kin file from running KING --related; contains kinship coefficients and inferred relationships of individuals |
-| File | related_output_0 | Always | Second .kin file from running KING --related; contains kinship coefficients of between-family relationship checking |
-
-## KING WDL Tasks
-
-The WDL tasks used by the KING Orchestration workflow are contained within the KingTasks.wdl document within this repo. This includes tasks that manipulate VCFs and tasks that will run KING. Below are the inputs and outputs for each task:
-
-### FilterVcfTask Input Parameters
+### Input Parameters
 
 | Type | Name | Req'd | Description | Default Value |
 | :--- | :--- | :---: | :--- | :--- |
@@ -43,7 +12,7 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | addldisk | No | Addition disk space to add to the final runtime disk space in GB | 10 |
 | Int | preemptible | No | Number of retries for VM | 1 |
 
-### FilterVcfTask Output Parameters
+### Output Parameters
 
 | Type | Name | When | Description |
 | :--- | :--- | :--- | :--- |
@@ -51,7 +20,9 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | num_snps | Always | Number of SNPs in the input bed file |
 | Int | num_samples | Always | Number of samples in the output VCF |
 
-### MergeVcfsTask Input Parameters
+## MergeVcfsTask
+
+### Input Parameters
 
 | Type | Name | Req'd | Description | Default Value |
 | :--- | :--- | :---: | :--- | :--- |
@@ -64,7 +35,7 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | mem_size | No | Memory for runtime | Defaults to 4; If the size of input VCFs is greater than 10, defaults to 8 |
 | Int | preemptible | No | Number of retries for VM | 2 |
 
-### MergeVcfsTask Output Parameters
+### Output Parameters
 
 | Type | Name | When | Description |
 | :--- | :--- | :--- | :--- |
@@ -72,7 +43,9 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | num_snps | Always | Number of SNPs in the input bed file |
 | Int | num_samples | Always | Number of samples in the output VCF |
 
-### Vcf2BedTask Input Parameters
+## Vcf2BedTask
+
+### Input Parameters
 
 | Type | Name | Req'd | Description | Default Value |
 | :--- | :--- | :---: | :--- | :--- |
@@ -83,7 +56,7 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | plink_mem | No | Memory to use for PLINK in GB; Actual runtime memory will be twice the size of the input PLINK memory | 4 |
 | Int | preemptible | No | Number of retries for VM | 1 |
 
-### Vcf2BedTask Output Parameters
+### Output Parameters
 
 | Type | Name | When | Description |
 | :--- | :--- | :--- | :--- |
@@ -91,7 +64,9 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | File | bim_file | Always | BIM file corresponding to output PLINK BED |
 | File | fam_file | Always | FAM file corresponding to output PLINK BED |
 
-### IbdsegTask Input Parameters
+## IbdsegTask
+
+### Input Parameters
 
 | Type | Name | Req'd | Description | Default Value |
 | :--- | :--- | :---: | :--- | :--- |
@@ -106,13 +81,15 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | mem_size | No | Memory for runtime | 4 |
 | Int | preemptible | No | Number of retries for VM | 2 |
 
-### IbdsegTask Output Parameters
+### Output Parameters
 
 | Type | Name | When | Description |
 | :--- | :--- | :--- | :--- |
 | File | ibdseg_output | Always | .seg file from running KING --ibdseg; contains kinship coefficients and inferred relationships of samples |
 
-## KinshipTask Input Parameters
+## KinshipTask
+
+### Input Parameters
 
 | Type | Name | Req'd | Description | Default Value |
 | :--- | :--- | :---: | :--- | :--- |
@@ -127,14 +104,16 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | mem_size | No | Memory for runtime | 4 |
 | Int | preemptible | No | Number of retries for VM | 2 |
 
-### KinshipTask Output Parameters
+### Output Parameters
 
 | Type | Name | When | Description |
 | :--- | :--- | :--- | :--- |
 | File | kinship_output | Always | .kin file from running KING --kinship; contains kinship coefficients of individuals |
 | File | kinship_output_0 | Always | Second .kin file from running KING --kinship; contains kinship coefficients of between-family relationship checking |
 
-## RelatedTask Input Parameters
+## RelatedTask
+
+### Input Parameters
 
 | Type | Name | Req'd | Description | Default Value |
 | :--- | :--- | :---: | :--- | :--- |
@@ -149,16 +128,9 @@ The WDL tasks used by the KING Orchestration workflow are contained within the K
 | Int | mem_size | No | Memory for runtime | 4 |
 | Int | preemptible | No | Number of retries for VM | 2 |
 
-### RelatedTask Output Parameters
+### Output Parameters
 
 | Type | Name | When | Description |
 | :--- | :--- | :--- | :--- |
 | File | related_output | Always | .kin file from running KING --related; contains kinship coefficients and inferred relationships of individuals |
 | File | related_output_0 | Always | Second .kin file from running KING --related; contains kinship coefficients of between-family relationship checking |
-
-## References
-
-Original KING paper:
-Manichaikul A, Mychaleckyj JC, Rich SS, Daly K, Sale M, Chen WM (2010) Robust relationship inference in genome-wide association studies. Bioinformatics 26(22):2867-2873
-
-KING Tutorial: https://www.kingrelatedness.com/manual.shtml
