@@ -1,0 +1,11 @@
+version: 1.2
+workflows:
+  - name: KingOrchestration
+    subclass: WDL
+    primaryDescriptorPath: /scripts/KingOrchestration.wdl
+    readMePath: /README.md
+    filters:
+      branches:
+        - /.*[a-zA-Z0-9].*/
+      tags:
+        - KING_*
