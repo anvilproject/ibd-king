@@ -1,6 +1,6 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/mgbpm/biofx-workflows/refs/heads/main/steps/Utilities.wdl"
+import "../../steps/Utilities.wdl"
 import "KingTasks.wdl"
 
 workflow KingWorkflow {
@@ -9,14 +9,14 @@ workflow KingWorkflow {
         Array[File]? input_vcfs_idx
         String output_basename
         File? input_bed
-        String run_type = "ibdseg"
+        String run_type = "related"
         Int degree = 3
         Int? king_mem
         String bcftools_docker_image = "us-central1-docker.pkg.dev/mgb-lmm-gcp-infrast-1651079146/mgbpmbiofx/bcftools:1.17"
         String king_docker_image = "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
     }
 
-    if ((run_type != "ibdseg") && (run_type != "related") && (run_type != "kinship")){
+    if ((run_type != "ibdseg") && (run_type != "related") && (run_type != "kinship") && (run_type != "duplicate")) {
         call Utilities.FailTask as RunTypeFail {
             input:
                 error_message = "Incorrect input for run_type input parameter."
@@ -87,51 +87,23 @@ workflow KingWorkflow {
     }
     Int final_king_mem = select_first([king_mem, king_mem__, king_mem_])
 
-    # Run KING with --ibdseg flag
-    if (run_type == "ibdseg") {
-        call KingTasks.IbdsegTask as RunIbdseg {
-            input:
-                bed_file = Vcf2Bed.bed_file,
-                bim_file = Vcf2Bed.bim_file,
-                fam_file = Vcf2Bed.fam_file,
-                degree = degree,
-                output_basename = output_basename,
-                docker_image = king_docker_image,
-                mem_size = final_king_mem
-        }
-    }
-    # Run KING with the --kinship flag
-    if (run_type == "kinship") {
-        call KingTasks.KinshipTask as RunKinship {
-            input:
-                bed_file = Vcf2Bed.bed_file,
-                bim_file = Vcf2Bed.bim_file,
-                fam_file = Vcf2Bed.fam_file,
-                degree = degree,
-                output_basename = output_basename,
-                docker_image = king_docker_image,
-                mem_size = final_king_mem
-        }
-    }
-    # Run KING with the --related flag
-    if (run_type == "related") {
-        call KingTasks.RelatedTask as RunRelated {
-            input:
-                bed_file = Vcf2Bed.bed_file,
-                bim_file = Vcf2Bed.bim_file,
-                fam_file = Vcf2Bed.fam_file,
-                degree = degree,
-                output_basename = output_basename,
-                docker_image = king_docker_image,
-                mem_size = final_king_mem
-        }
+    # Run KING with specified flag
+    call KingTasks.RunKingTask {
+        input:
+            bed_file = Vcf2Bed.bed_file,
+            bim_file = Vcf2Bed.bim_file,
+            fam_file = Vcf2Bed.fam_file,
+            flag = run_type,
+            degree = degree,
+            output_basename = output_basename,
+            docker_image = king_docker_image,
+            mem_size = final_king_mem
     }
 
     output {
-        File? kinship_output = RunKinship.kinship_output
-        File? kinship_ouput_0 = RunKinship.kinship_output_0
-        File? ibdseg_output = RunIbdseg.ibdseg_output
-        File? related_output = RunRelated.related_output
-        File? related_output_0 = RunRelated.related_output_0
+        File? seg_output = RunKingTask.seg_output
+        File? con_output = RunKingTask.con_output
+        File? kin_output = RunKingTask.kin_output
+        File? kin0_output = RunKingTask.kin0_output
     }
 }

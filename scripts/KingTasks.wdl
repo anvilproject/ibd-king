@@ -149,13 +149,14 @@ task Vcf2BedTask {
     }
 }
 
-task IbdsegTask {
+task RunKingTask {
     input {
         File bed_file
-        File bim_file
         File fam_file
+        File bim_file
+        Int degree = 3
+        String flag
         String output_basename
-        Int degree
         String docker_image
         Int addldisk = 10
         Int cpu = 2
@@ -169,60 +170,24 @@ task IbdsegTask {
     Int final_disk_size = bed_size + bim_size + fam_size + addldisk
 
     command <<<
-        set -eux -o pipefail
+        set -euxo pipefail
 
-        king --ibdseg                     \
-            -b "~{bed_file}"              \
-            --bim "~{bim_file}"           \
-            --fam "~{fam_file}"           \
-            --cpus "~{cpu}"               \
-            --prefix "~{output_basename}" \
-            --degree "~{degree}"
-
-    >>>
-
-    runtime {
-        cpu: cpu
-        docker: docker_image
-        disks: "local-disk " + final_disk_size + " SSD"
-        memory: mem_size + "GB"
-        preemptible: preemptible
-    }
-
-    output {
-        File ibdseg_output = "~{output_basename}.seg"
-    }
-}
-
-task KinshipTask {
-    input {
-        File bed_file
-        File bim_file
-        File fam_file
-        String output_basename
-        Int degree
-        String docker_image
-        Int addldisk = 10
-        Int cpu = 2
-        Int mem_size = 4
-        Int preemptible = 2
-    }
-
-    Int bed_size = ceil(size(bed_file, "GB") * 2)
-    Int bim_size = ceil(size(bim_file, "GB"))
-    Int fam_size = ceil(size(fam_file, "GB"))
-    Int final_disk_size = bed_size + bim_size + fam_size + addldisk
-
-    command <<<
-        set -eux -o pipefail
-
-        king --kinship                    \
-            -b "~{bed_file}"              \
-            --bim "~{bim_file}"           \
-            --fam "~{fam_file}"           \
-            --cpus "~{cpu}"               \
-            --prefix "~{output_basename}" \
-            --degree "~{degree}"
+        if ["~{flag}" == "duplicate"]; then
+            king --"~{flag}"                  \
+                -b "~{bed_file}"              \
+                --bim "~{bim_file}"           \
+                --fam "~{fam_file}"           \
+                --cpus "~{cpu}"               \
+                --prefix "~{output_basename}"
+        else
+            king --"~{flag}"                  \
+                -b "~{bed_file}"              \
+                --bim "~{bim_file}"           \
+                --fam "~{fam_file}"           \
+                --cpus "~{cpu}"               \
+                --prefix "~{output_basename}" \
+                --degree "~{degree}"
+        fi
 
     >>>
 
@@ -235,53 +200,9 @@ task KinshipTask {
     }
 
     output {
-        File kinship_output = "~{output_basename}.kin"
-        File kinship_output_0 = "~{output_basename}.kin0"
-    }
-}
-
-task RelatedTask {
-    input {
-        File bed_file
-        File fam_file
-        File bim_file
-        String output_basename
-        Int degree
-        String docker_image
-        Int addldisk = 10
-        Int cpu = 2
-        Int mem_size = 4
-        Int preemptible = 2
-    }
-
-    Int bed_size = ceil(size(bed_file, "GB") * 2)
-    Int bim_size = ceil(size(bim_file, "GB"))
-    Int fam_size = ceil(size(fam_file, "GB"))
-    Int final_disk_size = bed_size + bim_size + fam_size + addldisk
-
-    command <<<
-        set -eux -o pipefail
-
-        king --related                    \
-            -b "~{bed_file}"              \
-            --bim "~{bim_file}"           \
-            --fam "~{fam_file}"           \
-            --cpus "~{cpu}"               \
-            --prefix "~{output_basename}" \
-            --degree "~{degree}"
-
-    >>>
-
-    runtime {
-        cpu: cpu
-        docker: docker_image
-        disks: "local-disk " + final_disk_size + " SSD"
-        memory: mem_size + "GB"
-        preemptible: preemptible
-    }
-
-    output {
-        File related_output = "~{output_basename}.kin"
-        File related_output_0 = "~{output_basename}.kin0"
+        File? seg_output = "~{output_basename}.seg"
+        File? con_output = "~{output_basename}.con"
+        File? kin_output = "~{output_basename}.kin"
+        File? kin0_output = "~{output_basename}.kin0"
     }
 }
